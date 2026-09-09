@@ -1,0 +1,19 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <plurals name="second">
+        <item quantity="one">%d segundo</item>
+        <item quantity="other">%d segundos</item>
+    </plurals>
+    <plurals name="query">
+        <item quantity="one">%d busca</item>
+        <item quantity="other">%d buscas</item>
+    </plurals>
+    <plurals name="file">
+        <item quantity="one">%d ficheiro</item>
+        <item quantity="other">%d ficheiros</item>
+    </plurals>
+    <plurals name="song">
+        <item quantity="one">%d canción</item>
+        <item quantity="other">%d cancións</item>
+    </plurals>
+</resources>

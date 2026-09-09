@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application>
+        <!-- Fully qualified: this module's namespace differs from app.kreate.android,
+             where DeleteDatabasesActivity's package declaration actually is. -->
+        <activity
+                android:name="app.kreate.android.DeleteDatabasesActivity"
+                android:theme="@style/Theme.RiMusic"
+                android:exported="true" />
+    </application>
+</manifest>

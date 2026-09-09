@@ -1,0 +1,13 @@
+[submodule "innertube"]
+	path = modules/innertube
+	url = https://gitlab.com/tannguyen047/innertube-kotlin.git
+[submodule "strings-modifier"]
+	path = scripts/strings-modifier
+	url = https://gitlab.com/tannguyen047/string-modifier
+[submodule "modules/kizzy"]
+	path = modules/kizzy
+	url = https://github.com/knighthat/Kizzy
+[submodule "modules/metrolist"]
+	path = modules/metrolist
+	url = https://github.com/knighthat/Metrolist-innertube.git
+	branch = kreate-old

@@ -1,0 +1,114 @@
+package it.fast4x.rimusic
+
+import android.app.Application
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
+import android.net.NetworkRequest
+import androidx.core.content.getSystemService
+import androidx.lifecycle.ProcessLifecycleOwner
+import app.kreate.android.AppInfo
+import app.kreate.android.Preferences
+import app.kreate.android.updater.UpdateFeatureHolder
+import app.kreate.android.drawable.AppIcon
+import app.kreate.android.service.innertube.InnertubeProvider
+import app.kreate.android.utils.ConnectivityUtils
+import app.kreate.android.utils.CrashHandler
+import app.kreate.di.THUMBNAIL_SIZE
+import app.kreate.di.initKoin
+import app.kreate.logging.CoilLogger
+import app.kreate.logging.KoinBufferedLogger
+import app.kreate.logging.setupLogging
+import coil3.ImageLoader
+import coil3.PlatformContext
+import coil3.SingletonImageLoader
+import coil3.annotation.ExperimentalCoilApi
+import coil3.asImage
+import coil3.disk.DiskCache
+import coil3.memory.MemoryCache
+import coil3.network.ktor3.KtorNetworkFetcherFactory
+import coil3.request.crossfade
+import com.metrolist.innertube.YouTube
+import io.ktor.client.HttpClient
+import it.fast4x.rimusic.utils.AppLifecycleTracker
+import kotlinx.coroutines.Dispatchers
+import me.knighthat.innertube.Innertube
+import org.koin.android.ext.android.inject
+import org.koin.android.ext.koin.androidContext
+
+
+@OptIn(ExperimentalCoilApi::class)
+class MainApplication : Application(), SingletonImageLoader.Factory {
+
+    override fun onCreate() {
+        super.onCreate()
+
+        // Must run first: everything below (and other classes at runtime) reads
+        // debug/versionName/applicationId from here instead of the old BuildConfig,
+        // since :composeApp is now a single-variant library with no BuildConfig.
+        AppInfo.init( this )
+        UpdateFeatureHolder.init( this )
+
+        Thread.setDefaultUncaughtExceptionHandler( CrashHandler(this) )
+
+        val koinLogger = KoinBufferedLogger()
+        initKoin {
+            logger( koinLogger )
+
+            androidContext( this@MainApplication )
+        }
+
+        setupLogging( koinLogger )
+
+        Innertube.setProvider( InnertubeProvider() )
+        YouTube.cookie = Preferences.YOUTUBE_COOKIES.value
+        YouTube.visitorData = Preferences.YOUTUBE_VISITOR_DATA.value
+        YouTube.dataSyncId = Preferences.YOUTUBE_SYNC_ID.value
+
+        // Register network callback
+        getSystemService<ConnectivityManager>()?.run {
+            val networkRequest: NetworkRequest = NetworkRequest.Builder()
+                                                               .addCapability( NetworkCapabilities.NET_CAPABILITY_INTERNET )
+                                                               .build()
+            registerNetworkCallback( networkRequest, ConnectivityUtils )
+        }
+        // Register app lifecycle tracker
+        ProcessLifecycleOwner.get().lifecycle.addObserver(AppLifecycleTracker)
+    }
+
+    override fun onTerminate() {
+        Preferences.unload()
+
+        super.onTerminate()
+    }
+
+    override fun newImageLoader( context: PlatformContext ): ImageLoader {
+        val client: HttpClient by inject()
+        val diskCache: DiskCache by inject()
+        val memoryCache: MemoryCache by inject()
+        val appIcon = AppIcon.bitmap( context, THUMBNAIL_SIZE ).asImage()
+
+        // TODO: Add a toggle in setting that let user enable network caching
+        // This feature will set an expiration date on cache, forcing
+        // user to "re-fetch" the image data again after a period of time.
+        // This will potentially double the storage.
+        return ImageLoader.Builder(context)
+                          .logger( CoilLogger() )
+                          .coroutineContext( Dispatchers.IO )
+                          .decoderCoroutineContext( Dispatchers.Default )
+                          .crossfade( true )
+                          .error( appIcon )
+                          .memoryCache( memoryCache )
+                          .diskCache {
+                              if( diskCache.maxSize > 1 )
+                                  diskCache
+                              else
+                                  null
+                          }
+                          .components {
+                              add(
+                                  KtorNetworkFetcherFactory(client)
+                              )
+                          }
+                          .build()
+    }
+}

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:tools="http://schemas.android.com/tools">
+
+    <uses-permission
+            android:name="android.permission.REQUEST_INSTALL_PACKAGES"
+            tools:node="merge"/>
+
+    <application>
+        <meta-data
+                android:name="app.kreate.android.updater.UPDATE_FEATURE_IMPL"
+                android:value="me.knighthat.updater.UpdateFeatureImpl" />
+
+        <provider
+                android:name="androidx.core.content.FileProvider"
+                android:authorities="${applicationId}.provider"
+                android:exported="false"
+                android:grantUriPermissions="true">
+            <meta-data
+                    android:name="android.support.FILE_PROVIDER_PATHS"
+                    android:resource="@xml/provider_paths" />
+        </provider>
+    </application>
+</manifest>

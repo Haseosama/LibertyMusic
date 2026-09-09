@@ -1,0 +1,19 @@
+<p>
+  Fork di <a href="https://github.com/fast4x/RiMusic">RiMusic</a>, la performance è la nostra priorità assoluta.
+</p>
+
+<b>Caratteristiche:</b>
+<ul>
+  <li>Supporta più lingue</li>
+  <li>Design amichevoli</li>
+  <li>Cache o scarica brani per la riproduzione offline</li>
+  <li>Riproduzione in background</li>
+  <li>Statistiche e report (memorizzati ed elaborati localmente)</li>
+  <li>Vari visualizzatori audio (alcuni richiedono l'accesso al microfono, ma sono disabilitati per impostazione predefinita)</li>
+  <li>Timer di spegnimento</li>
+  <li>Controllo audio: velocità di riproduzione, pitch, normalizzazione, salta silenzio</li>
+  <li>Supporto per Android Auto, Android TV e YouTube video</li>
+  <li>Esporta canzoni cached/scaricate</li>
+  <li>Riproduci musica anche quando non è connesso ad internet</li>
+  <li>E molti altri ancora...</li>
+</ul>

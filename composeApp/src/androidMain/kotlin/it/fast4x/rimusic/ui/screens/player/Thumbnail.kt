@@ -13,6 +13,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.Image
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.aspectRatio
@@ -22,7 +23,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -359,11 +359,14 @@ fun Thumbnail(
                     )
                 }
 
-                var errorCounter by remember { mutableIntStateOf(0) }
-
-                if (error != null) {
-                    errorCounter = errorCounter.plus(1)
-                    if (errorCounter < 3) {
+                // Fires once per distinct error (not on every recomposition): mutating a
+                // remembered state directly in the composable body — as the old errorCounter
+                // did — writes state during composition, which retriggers recomposition of
+                // this same scope immediately, forever, for as long as `error` stayed non-null.
+                // That turned one playback failure into thousands of repeated log lines/toasts
+                // per second instead of a single, clear message.
+                LaunchedEffect( error ) {
+                    if (error != null) {
                         Logger.e( error?.cause?.cause ) { "Playback error" }
                         Toaster.e(
                             if (currentWindow.mediaItem.isLocal)
@@ -381,8 +384,7 @@ fun Thumbnail(
                                 else -> unknownplaybackerror
                             }
                         )
-                    //    player.seekToNext()
-                    } else errorCounter = 0
+                    }
                 }
             }
             /*

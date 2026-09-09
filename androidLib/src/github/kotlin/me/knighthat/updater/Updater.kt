@@ -58,7 +58,7 @@ object Updater : KoinComponent {
      */
     @Throws(ResponseException::class, SerializationException::class)
     private suspend fun getLatestRelease(): GithubRelease {
-        // https://api.github.com/repos/knighthat/Kreate/releases/latest
+        // https://api.github.com/repos/Haseosama/LibertyMusic/releases/latest
         val url = "${Repository.GITHUB_API}/repos/${Repository.LATEST_TAG_URL}"
 
         return client.get( url )
@@ -73,7 +73,7 @@ object Updater : KoinComponent {
     @OptIn(ExperimentalTime::class)
     @Throws(ResponseException::class, NoSuchElementException::class, SerializationException::class)
     private suspend fun getPrerelease(): GithubRelease {
-        // https://api.github.com/repos/knighthat/Kreate/releases
+        // https://api.github.com/repos/Haseosama/LibertyMusic/releases
         val url = "${Repository.GITHUB_API}/repos/${Repository.REPO}/releases"
 
         return client.get( url )

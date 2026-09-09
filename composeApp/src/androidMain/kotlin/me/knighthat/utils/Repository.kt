@@ -5,10 +5,8 @@ object Repository {
     const val GITHUB = "https://github.com"
     const val GITHUB_API = "https://api.github.com"
 
-    const val OWNER = "knighthat"
-    // Intentionally the upstream repo's actual name, NOT AppInfo.NAME/the app's
-    // display name — this is used to check upstream Kreate's GitHub releases.
-    const val REPO = "$OWNER/Kreate"
+    const val OWNER = "Haseosama"
+    const val REPO = "$OWNER/LibertyMusic"
     const val REPO_URL = "$GITHUB/$REPO"
 
     const val LATEST_TAG_URL = "$REPO/releases/latest"

@@ -1,0 +1,2 @@
+Fixes:
+- The "About" screen and the in-app update checker pointed to the old upstream project's GitHub instead of this one

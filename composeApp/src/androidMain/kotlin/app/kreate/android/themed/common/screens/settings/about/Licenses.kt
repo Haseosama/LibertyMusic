@@ -17,12 +17,14 @@ import app.kreate.android.R
 import it.fast4x.rimusic.ui.components.Skeleton
 import it.fast4x.rimusic.ui.styling.Dimensions
 import it.fast4x.rimusic.ui.styling.LocalAppearance
+import it.fast4x.rimusic.utils.getVersionName
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.decodeFromStream
 import kotlinx.serialization.json.jsonArray
+import me.knighthat.utils.Repository
 import me.knighthat.utils.Toaster
 
 
@@ -47,7 +49,7 @@ fun Licenses(
             ignoreUnknownKeys = true
         }
 
-        val licenseEntries = runCatching {
+        val thirdPartyEntries = runCatching {
             context.resources
                    .openRawResource( R.raw.licenses )
                    .use { inStream ->
@@ -62,6 +64,17 @@ fun Licenses(
             err.printStackTrace()
             err.message?.also( Toaster::e )
         }.getOrDefault( emptyList() )
+
+        // Liberty Music itself isn't a Gradle dependency, so the auto-generated list above
+        // (third-party libraries only) never includes it — list it first by hand.
+        val libertyMusicEntry = Dependency(
+            moduleName = "Liberty Music",
+            moduleVersion = getVersionName(),
+            moduleUrl = Repository.REPO_URL,
+            moduleLicense = "GPL-3.0",
+            moduleLicenseUrl = "${Repository.REPO_URL}/blob/main/LICENSE"
+        )
+        val licenseEntries = listOf( libertyMusicEntry ) + thirdPartyEntries
 
         LazyColumn(
             contentPadding = PaddingValues( bottom = Dimensions.bottomSpacer ),

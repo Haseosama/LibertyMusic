@@ -42,7 +42,7 @@ private fun appIconClickAction(
         when( countToReveal.intValue ) {
             10 -> {
                 countToReveal.intValue = 0
-                NavRoutes.gamePacman.navigateHere( navController )
+                NavRoutes.gameFlappyBird.navigateHere( navController )
                 ""
             }
             3 -> "Do you like clicking? Then continue..."
@@ -59,7 +59,7 @@ private fun appIconLongClickAction(
     context: Context
 ) {
     Toaster.n( "You are a number one, click and enjoy the surprise", Toast.LENGTH_LONG )
-    NavRoutes.gameSnake.navigateHere( navController )
+    NavRoutes.gameDonkeyKong.navigateHere( navController )
 }
 
 @OptIn(ExperimentalFoundationApi::class)

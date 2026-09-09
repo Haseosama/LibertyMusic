@@ -247,6 +247,18 @@ class ExoPlayerListener(
             CoroutineScope( Dispatchers.IO ).launch {
                 runCatching { CipherDeobfuscator.onStreamRejected() }
             }
+
+            // Marking the video above only helps the NEXT resolution attempt — nothing else
+            // re-triggers one while ExoPlayer is stuck on this same media item (prepare() is
+            // otherwise only re-run on a media item transition, see onMediaItemTransition), so
+            // without this it just sits in STATE_IDLE forever having "fixed" a retry that never
+            // happens. Skip it when we're about to move to a different item instead. play() is
+            // needed too — after a fatal error takes it to STATE_IDLE, prepare() alone re-buffers
+            // without resuming playback, requiring the user to press play by hand.
+            if ( !(Preferences.PLAYBACK_SKIP_ON_ERROR.value && player.hasNextMediaItem()) ) {
+                player.prepare()
+                player.play()
+            }
         }
 
         if ( Preferences.PLAYBACK_SKIP_ON_ERROR.value && player.hasNextMediaItem() )

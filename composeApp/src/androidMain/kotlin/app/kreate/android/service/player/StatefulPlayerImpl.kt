@@ -290,7 +290,7 @@ class StatefulPlayerImpl(private val player: ExoPlayer) :
                 // Songs with the same id as provided [Song] should be removed.
                 // The song usually lives at the the first index, but this
                 // way is safer to implement, as it can live through changes in position.
-                relatedSongs.dropWhile { it.id == mediaItem.mediaId || it.id in currentQueue }
+                relatedSongs.filterNot { it.id == mediaItem.mediaId || it.id in currentQueue }
                             .fastMap( InnertubeSong::toMediaItem )
                             .also {
                                 // Any call to [player] must happen on Main thread
@@ -310,7 +310,11 @@ class StatefulPlayerImpl(private val player: ExoPlayer) :
                                     val endIndex = player.mediaItemCount
                                     if( !append && player.mediaItemCount > 1 ) {
                                         player.moveMediaItem( curIndex, 0 )
-                                        player.removeMediaItems( curIndex + 1, endIndex )
+                                        // curIndex is the position BEFORE the move above; now that the
+                                        // current song sits at index 0, everything else to drop starts
+                                        // at index 1 — using curIndex + 1 here left the songs that used
+                                        // to be *before* the current one stranded in the queue.
+                                        player.removeMediaItems( 1, endIndex )
                                     }
 
                                     player.addMediaItems(it)

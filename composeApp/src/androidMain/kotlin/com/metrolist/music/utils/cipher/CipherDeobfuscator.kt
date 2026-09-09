@@ -156,13 +156,16 @@ object CipherDeobfuscator {
         }
 
         val webView = getOrCreateWebView(forceRefresh = isRetry)
-        if (webView == null) {
-            logger.e("Failed to get/create CipherWebView")
-            return null
+        val deobfuscatedSig = if (webView != null) {
+            logger.d("Calling webView.deobfuscateSignature()...")
+            webView.deobfuscateSignature(obfuscatedSig)
+        } else {
+            logger.w("Name-based sig extraction failed — falling back to structural JS solver")
+            solveViaSolver("sig", obfuscatedSig) ?: run {
+                logger.e("Solver fallback also failed to deobfuscate signature")
+                return null
+            }
         }
-
-        logger.d("Calling webView.deobfuscateSignature()...")
-        val deobfuscatedSig = webView.deobfuscateSignature(obfuscatedSig)
         logger.d("Deobfuscated signature: ${deobfuscatedSig.take(30)}... (length=${deobfuscatedSig.length})")
 
         // Build the URL with deobfuscated signature
@@ -219,23 +222,23 @@ object CipherDeobfuscator {
         logger.d("  decoded: $nValue")
 
         val webView = getOrCreateWebView(forceRefresh = false)
-        if (webView == null) {
-            logger.e("Failed to get CipherWebView for n-transform")
-            return url
+        if (webView != null) {
+            logger.d("CipherWebView state:")
+            logger.d("  nFunctionAvailable: ${webView.nFunctionAvailable}")
+            logger.d("  discoveredNFuncName: ${webView.discoveredNFuncName}")
+            logger.d("  usingHardcodedMode: ${webView.usingHardcodedMode}")
         }
 
-        logger.d("CipherWebView state:")
-        logger.d("  nFunctionAvailable: ${webView.nFunctionAvailable}")
-        logger.d("  discoveredNFuncName: ${webView.discoveredNFuncName}")
-        logger.d("  usingHardcodedMode: ${webView.usingHardcodedMode}")
-
-        if (!webView.nFunctionAvailable) {
-            logger.e("N-transform function was not discovered at init time")
-            return url
+        val transformedN = if (webView != null && webView.nFunctionAvailable) {
+            logger.d("Calling webView.transformN()...")
+            webView.transformN(nValue)
+        } else {
+            logger.w("Name-based n-function unavailable — falling back to structural JS solver")
+            solveViaSolver("n", nValue) ?: run {
+                logger.e("Solver fallback also failed to transform n-param")
+                return url
+            }
         }
-
-        logger.d("Calling webView.transformN()...")
-        val transformedN = webView.transformN(nValue)
 
         logger.d("=== N-TRANSFORM SUCCESS ===")
         logger.d("N-param: $nValue -> $transformedN")
@@ -342,6 +345,84 @@ object CipherDeobfuscator {
         builtConfigEpoch = builtEpoch
         return webView
     }
+
+    //<editor-fold desc="Structural JS solver fallback">
+    // Purely stateless (the player.js it solves against is passed in as call data, never baked
+    // into the page), so unlike cipherWebView it's created once and reused for the process
+    // lifetime — no per-player-hash rebuild needed.
+    private var solverWebView: JsSolverWebView? = null
+
+    // Parsing player.js with the solver is the expensive part; caching the already-preprocessed
+    // form per hash lets repeat sig/n calls against the same player skip re-parsing. Naturally
+    // invalidates itself: a hash mismatch just falls back to the full "player" request below.
+    private var solverPreprocessedHash: String? = null
+    private var solverPreprocessedPlayer: String? = null
+
+    private suspend fun getOrCreateSolverWebView(): JsSolverWebView? {
+        solverWebView?.let { return it }
+        return try {
+            JsSolverWebView.create(appContext).also { solverWebView = it }
+        } catch (e: Exception) {
+            logger.e("Failed to create JsSolverWebView: ${e.message}", e)
+            null
+        }
+    }
+
+    /**
+     * Solve a single sig/n [challenge] with the structural AST solver, bypassing name-based
+     * extraction entirely. Returns null on any failure (missing player JS, solver init failure,
+     * the solver itself failing to locate/run the function) — callers fall back to the existing
+     * "give up" behavior in that case.
+     */
+    private suspend fun solveViaSolver(type: String, challenge: String): String? {
+        val solver = getOrCreateSolverWebView() ?: return null
+        val (playerJs, hash) = PlayerJsFetcher.getPlayerJs(forceRefresh = false) ?: run {
+            logger.e("Solver fallback: could not fetch player JS")
+            return null
+        }
+
+        val usePreprocessed = solverPreprocessedHash == hash && solverPreprocessedPlayer != null
+        val input = if (usePreprocessed) {
+            SolverInput(
+                type = "preprocessed",
+                preprocessedPlayer = solverPreprocessedPlayer,
+                requests = listOf(SolverRequest(type, listOf(challenge))),
+            )
+        } else {
+            SolverInput(
+                type = "player",
+                player = playerJs,
+                requests = listOf(SolverRequest(type, listOf(challenge))),
+                outputPreprocessed = true,
+            )
+        }
+
+        val output = try {
+            solver.solve(input)
+        } catch (e: Exception) {
+            logger.e("Solver call failed: ${e.message}", e)
+            return null
+        }
+
+        if (output.type != "result") {
+            logger.e("Solver returned top-level error: ${output.error}")
+            return null
+        }
+
+        if (!usePreprocessed && output.preprocessedPlayer != null) {
+            solverPreprocessedHash = hash
+            solverPreprocessedPlayer = output.preprocessedPlayer
+        }
+
+        val response = output.responses?.firstOrNull()
+        if (response == null || response.type != "result") {
+            logger.e("Solver failed to solve $type: ${response?.error}")
+            return null
+        }
+
+        return response.data?.get(challenge)
+    }
+    //</editor-fold>
 
     private suspend fun closeWebView() {
         logger.d("closeWebView: existing=${cipherWebView != null}")

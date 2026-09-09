@@ -60,8 +60,8 @@ import it.fast4x.rimusic.enums.HomeScreenTabs
 import it.fast4x.rimusic.enums.NavRoutes
 import it.fast4x.rimusic.enums.StatisticsType
 import it.fast4x.rimusic.enums.TransitionEffect
-import it.fast4x.rimusic.extensions.games.donkeykong.DonkeyKongGame
 import it.fast4x.rimusic.extensions.games.flappybird.FlappyBirdGame
+import it.fast4x.rimusic.extensions.games.gravity.GravityEasterEgg
 import it.fast4x.rimusic.extensions.games.pacman.Pacman
 import it.fast4x.rimusic.extensions.games.snake.SnakeGame
 import it.fast4x.rimusic.models.Mood
@@ -221,9 +221,9 @@ fun AppNavigation(
             }
         }
 
-        composable(route = NavRoutes.gameDonkeyKong.name) {
+        composable(route = NavRoutes.gameGravity.name) {
             modalBottomSheetPage {
-                DonkeyKongGame()
+                GravityEasterEgg()
             }
         }
 

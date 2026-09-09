@@ -13,7 +13,7 @@ enum class NavRoutes {
     gamePacman,
     gameSnake,
     gameFlappyBird,
-    gameDonkeyKong,
+    gameGravity,
     history,
     localPlaylist,
     mood,

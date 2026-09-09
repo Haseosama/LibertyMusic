@@ -46,7 +46,7 @@ private fun appIconClickAction(
                 ""
             }
             3 -> "Do you like clicking? Then continue..."
-            6 -> "Okay, you’re looking for something, keep..."
+            6 -> "Okay, you're looking for something, keep..."
             9 -> "You are a number one, click and enjoy the surprise"
             else -> ""
         }
@@ -58,8 +58,8 @@ private fun appIconLongClickAction(
     navController: NavController,
     context: Context
 ) {
-    Toaster.n( "You are a number one, click and enjoy the surprise", Toast.LENGTH_LONG )
-    NavRoutes.gameDonkeyKong.navigateHere( navController )
+    Toaster.n( "Uh oh, someone broke gravity again...", Toast.LENGTH_LONG )
+    NavRoutes.gameGravity.navigateHere( navController )
 }
 
 @OptIn(ExperimentalFoundationApi::class)

@@ -13,12 +13,17 @@ import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.Timeline
 import androidx.media3.common.util.UnstableApi
+import androidx.media3.datasource.HttpDataSource
 import androidx.media3.exoplayer.source.ShuffleOrder.DefaultShuffleOrder
 import androidx.media3.session.CommandButton
 import androidx.media3.session.MediaSession
 import app.kreate.android.Preferences
 import app.kreate.android.R
 import app.kreate.database.models.PersistentQueue
+import app.kreate.di.clearCachedStreamUrlOf
+import co.touchlab.kermit.Logger
+import com.metrolist.music.utils.YTPlayerUtils
+import com.metrolist.music.utils.cipher.CipherDeobfuscator
 import it.fast4x.rimusic.Database
 import it.fast4x.rimusic.enums.NotificationButtons
 import it.fast4x.rimusic.enums.QueueLoopType
@@ -154,6 +159,21 @@ class ExoPlayerListener(
             else -> t.cause?.let( ::traverseErrorStack ) ?: t
         }
 
+    /**
+     * Walks the full cause chain (independent of [traverseErrorStack], which stops at its own
+     * known exception types) looking for the HTTP status code ExoPlayer's data source got back
+     * when it actually fetched the resolved stream URL.
+     */
+    private fun findHttpResponseCode( t: Throwable? ): Int? {
+        var current = t
+        while( current != null ) {
+            if( current is HttpDataSource.InvalidResponseCodeException )
+                return current.responseCode
+            current = current.cause
+        }
+        return null
+    }
+
     @MainThread
     private fun printErrorMessage( errMsg: String )  {
         // If the same error is set within 10s, it'll be ignored.
@@ -212,7 +232,22 @@ class ExoPlayerListener(
             else -> rootCause.message ?: context.getString( R.string.error_unknown )
         }.also( ::printErrorMessage )
 
-        // TODO: Add additional recovery step if type of error allows it
+        // A WEB_REMIX stream URL that 403s on ExoPlayer's own GET means the cipher/n-transform
+        // produced a signature/param the CDN doesn't accept. These two hooks existed already but
+        // were never wired to an actual failure signal, so a bad WEB_REMIX resolution kept being
+        // retried forever instead of ever falling through to a fallback client — mark it so the
+        // NEXT resolution for this video skips straight to a fallback client, drop the now-bad
+        // cached URL, and nudge the cipher config to refresh in case it's just stale.
+        if ( findHttpResponseCode( error ) == 403 ) {
+            player.currentMediaItem?.mediaId?.let { videoId ->
+                Logger.w( tag = "ExoPlayerListener" ) { "Stream 403 for $videoId — marking WEB_REMIX failed" }
+                YTPlayerUtils.markWebRemixFailed( videoId )
+                clearCachedStreamUrlOf( videoId )
+            }
+            CoroutineScope( Dispatchers.IO ).launch {
+                runCatching { CipherDeobfuscator.onStreamRejected() }
+            }
+        }
 
         if ( Preferences.PLAYBACK_SKIP_ON_ERROR.value && player.hasNextMediaItem() )
             player.playNext()

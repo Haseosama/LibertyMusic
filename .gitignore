@@ -13,6 +13,10 @@
 *.apk
 *.aab
 
+###      DEBUGGING (pulled from a device via adb for troubleshooting)
+/runtime_logs*.log
+/*_screenshot.jpg
+
 ###      BINS
 **bin/
 

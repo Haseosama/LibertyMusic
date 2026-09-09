@@ -1,0 +1,9 @@
+New:
+- Renamed to Liberty Music
+
+Fixes:
+- Some songs refused to play ("Video unavailable" or a 403 error): the app now automatically falls back to an alternate source when the main one fails
+- Playback no longer resumed by itself after that kind of error
+- Radio could jump to an unrelated song right after the first track
+- Volume could get stuck at maximum on some devices
+- A playback error could make the app stutter in a tight loop instead of showing a single clear message

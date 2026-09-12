@@ -33,6 +33,7 @@ import it.fast4x.rimusic.service.NoInternetException
 import it.fast4x.rimusic.service.PlayableFormatNotFoundException
 import it.fast4x.rimusic.service.UnknownException
 import it.fast4x.rimusic.service.UnplayableException
+import it.fast4x.rimusic.service.VideoIdMismatchException
 import it.fast4x.rimusic.utils.mediaItems
 import it.fast4x.rimusic.utils.playNext
 import kotlinx.coroutines.CoroutineScope
@@ -58,11 +59,23 @@ class ExoPlayerListener(
     private val onMediaTransition: (MediaItem?) -> Unit
 ): Player.Listener, KoinComponent {
 
+    private companion object {
+        const val MAX_AUTO_RETRIES = 2
+    }
+
     private val context: Context by inject()
 
     private var volumeNormalizationJob: Job = Job()
     private var errorTimestamp = 0L
     private var lastErrorMessage = ""
+
+    // Auto-retry bookkeeping: a flaky/high-latency mobile connection can drop a stream
+    // mid-buffer with a raw, unclassified IOException that isn't a 403 and isn't one of our
+    // named exceptions — that used to leave playback stuck forever showing "unknown playback
+    // error" with no further attempt made. Track consecutive failures per video so ANY error
+    // type gets a couple of automatic retries, not just the WEB_REMIX-403 case.
+    private var lastFailedVideoId: String? = null
+    private var retryAttempts = 0
 
     var loudnessEnhancer: LoudnessEnhancer? = null
         private set
@@ -232,22 +245,40 @@ class ExoPlayerListener(
             else -> rootCause.message ?: context.getString( R.string.error_unknown )
         }.also( ::printErrorMessage )
 
+        val videoId = player.currentMediaItem?.mediaId
+        retryAttempts = if ( videoId != null && videoId == lastFailedVideoId ) retryAttempts + 1 else 1
+        lastFailedVideoId = videoId
+
         // A WEB_REMIX stream URL that 403s on ExoPlayer's own GET means the cipher/n-transform
         // produced a signature/param the CDN doesn't accept. These two hooks existed already but
         // were never wired to an actual failure signal, so a bad WEB_REMIX resolution kept being
         // retried forever instead of ever falling through to a fallback client — mark it so the
         // NEXT resolution for this video skips straight to a fallback client, drop the now-bad
         // cached URL, and nudge the cipher config to refresh in case it's just stale.
-        if ( findHttpResponseCode( error ) == 403 ) {
-            player.currentMediaItem?.mediaId?.let { videoId ->
-                Logger.w( tag = "ExoPlayerListener" ) { "Stream 403 for $videoId — marking WEB_REMIX failed" }
-                YTPlayerUtils.markWebRemixFailed( videoId )
-                clearCachedStreamUrlOf( videoId )
-            }
+        if ( findHttpResponseCode( error ) == 403 && videoId != null ) {
+            Logger.w( tag = "ExoPlayerListener" ) { "Stream 403 for $videoId — marking WEB_REMIX failed" }
+            YTPlayerUtils.markWebRemixFailed( videoId )
+            clearCachedStreamUrlOf( videoId )
             CoroutineScope( Dispatchers.IO ).launch {
                 runCatching { CipherDeobfuscator.onStreamRejected() }
             }
+        }
 
+        // Some failures are permanent — retrying won't ever succeed, so don't waste attempts
+        // (and network calls) on them.
+        val isPermanentFailure = rootCause is UnplayableException
+                || rootCause is LoginRequiredException
+                || rootCause is VideoIdMismatchException
+                || rootCause is PlayableFormatNotFoundException
+
+        // Auto-retry the SAME song a couple of times before giving up. This originally only
+        // covered the WEB_REMIX-403 case above, but a flaky/high-latency mobile connection (the
+        // kind common on some countries' mobile networks) can drop a stream mid-buffer with a
+        // raw, unclassified error that's neither a 403 nor one of our named exceptions — that
+        // used to leave playback permanently stuck showing "unknown playback error" with nothing
+        // ever attempting to recover it. Capped at MAX_AUTO_RETRIES so a genuinely broken source
+        // doesn't retry forever.
+        if ( !isPermanentFailure && retryAttempts <= MAX_AUTO_RETRIES ) {
             // Marking the video above only helps the NEXT resolution attempt — nothing else
             // re-triggers one while ExoPlayer is stuck on this same media item (prepare() is
             // otherwise only re-run on a media item transition, see onMediaItemTransition), so
@@ -256,9 +287,8 @@ class ExoPlayerListener(
             // prepare() alone re-buffers without resuming playback, requiring a manual press-play.
             //
             // Always retried here — even when "skip on error" is enabled — instead of falling
-            // through to that generic skip-to-next-song behavior below: this recovery is built
-            // specifically for a 403 and is likely to succeed on the SAME song via the
-            // now-marked fallback client, which is what the user actually wants to hear, not
+            // through to that generic skip-to-next-song behavior below: this recovery is likely
+            // to succeed on the SAME song, which is what the user actually wants to hear, not
             // whatever comes next in the queue.
             player.prepare()
             player.play()
@@ -270,6 +300,13 @@ class ExoPlayerListener(
     }
 
     override fun onEvents(player: Player, events: Player.Events) {
+        if ( player.playbackState == Player.STATE_READY ) {
+            // Playback recovered — clear the retry counter so a later failure on this same
+            // song (e.g. it plays again after a repeat) gets its own fresh set of retries.
+            retryAttempts = 0
+            lastFailedVideoId = null
+        }
+
         if (
             events.containsAny(
                 Player.EVENT_PLAYBACK_STATE_CHANGED,

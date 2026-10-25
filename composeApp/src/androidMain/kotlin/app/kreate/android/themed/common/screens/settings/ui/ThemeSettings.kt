@@ -305,7 +305,8 @@ fun LazyListScope.themeSettingsSection( search: SettingEntrySearch ) {
         ) {
             when( it ) {
                 ColorPaletteName.PureBlack,
-                ColorPaletteName.ModernBlack -> { /* Does nothing */ }
+                ColorPaletteName.ModernBlack,
+                ColorPaletteName.LiquidGlass -> { /* Does nothing */ }
 
                 ColorPaletteName.Customized -> IndividualColorSection( search )
 

@@ -1,0 +1,5 @@
+New:
+- "Liquid Glass" theme (Settings > Theme): frosted translucent surfaces with a soft glowing backdrop, applied to the navigation bar and the mini player
+
+Fixes:
+- Playback now automatically retries the same song up to 2 times when a stream drops with an unclassified error (typically an unstable mobile connection), instead of staying stuck on "unknown playback error"

@@ -462,7 +462,7 @@ fun ControlsEssential(
                         }
                     }
 
-                    ColorPaletteName.PureBlack, ColorPaletteName.ModernBlack ->
+                    ColorPaletteName.PureBlack, ColorPaletteName.ModernBlack, ColorPaletteName.LiquidGlass ->
                         if (playerPlayButtonType == PlayerPlayButtonType.CircularRibbed)
                             colorPalette().background1 else
                             if (playerPlayButtonType != PlayerPlayButtonType.Disabled)

@@ -35,6 +35,7 @@ data class ColorPalette(
             1 -> DefaultLightColorPalette
             2 -> PureBlackColorPalette
             3 -> ModernBlackColorPalette
+            4 -> LiquidGlassColorPalette
             else -> dynamicColorPaletteOf(
                 FloatArray(3).apply { ColorUtils.colorToHSL(accent, this) },
                 value[1] as Boolean
@@ -48,6 +49,7 @@ data class ColorPalette(
                     value === DefaultLightColorPalette -> 1
                     value === PureBlackColorPalette -> 2
                     value === ModernBlackColorPalette -> 3
+                    value === LiquidGlassColorPalette -> 4
                     else -> value.accent.toArgb()
                 },
                 value.isDark
@@ -103,6 +105,23 @@ val ModernBlackColorPalette = DefaultDarkColorPalette.copy(
     background3 = DefaultDarkColorPalette.accent
 )
 
+// Always dark: glass surfaces need a deep, colourful backdrop to read as glass. The root
+// background is painted as a gradient instead of a flat colour, see LiquidGlass.kt.
+val LiquidGlassColorPalette = ColorPalette(
+    background0 = Color(0xff0a0f24),
+    background1 = Color(0xff121a3a),
+    background2 = Color(0xff1b2552),
+    background3 = Color(0xff2c3a78),
+    background4 = Color(0xff1e2a5e),
+    text = Color(0xfff2f5ff),
+    textSecondary = Color(0xffb4bee0),
+    textDisabled = Color(0xff6e7aa8),
+    iconButtonPlayer = Color(0xfff2f5ff),
+    accent = Color(0xff6ec1ff),
+    onAccent = Color(0xff04122b),
+    isDark = true
+)
+
 fun colorPaletteOf(
     colorPaletteName: ColorPaletteName,
     colorPaletteMode: ColorPaletteMode,
@@ -120,6 +139,7 @@ fun colorPaletteOf(
         }
         ColorPaletteName.PureBlack -> PureBlackColorPalette
         ColorPaletteName.ModernBlack -> ModernBlackColorPalette
+        ColorPaletteName.LiquidGlass -> LiquidGlassColorPalette
     }
 }
 

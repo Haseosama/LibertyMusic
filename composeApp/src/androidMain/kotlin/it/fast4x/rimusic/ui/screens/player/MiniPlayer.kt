@@ -76,6 +76,7 @@ import it.fast4x.rimusic.ui.components.themed.NowPlayingSongIndicator
 import it.fast4x.rimusic.ui.styling.Dimensions
 import it.fast4x.rimusic.ui.styling.favoritesIcon
 import it.fast4x.rimusic.ui.styling.favoritesOverlay
+import it.fast4x.rimusic.ui.styling.surfaceBackground
 import it.fast4x.rimusic.utils.DisposableListener
 import it.fast4x.rimusic.utils.intent
 import it.fast4x.rimusic.utils.isExplicit
@@ -277,7 +278,7 @@ fun MiniPlayer(
                         }
                     )
                 }
-                .background(colorPalette().background2)
+                .surfaceBackground(RoundedCornerShape(12.dp), colorPalette().background2)
                 .fillMaxWidth()
                 .drawBehind {
                     if (backgroundProgress == BackgroundProgress.Both || backgroundProgress == BackgroundProgress.MiniPlayer) {

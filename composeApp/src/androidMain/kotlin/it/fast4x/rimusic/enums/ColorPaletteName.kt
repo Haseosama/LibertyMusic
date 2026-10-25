@@ -16,6 +16,8 @@ enum class ColorPaletteName(
 
     ModernBlack( R.string.theme_modern_black ),
 
+    LiquidGlass( R.string.theme_liquid_glass ),
+
     MaterialYou( R.string.theme_material_you ),
 
     Customized( R.string.theme_customized ),

@@ -132,6 +132,8 @@ import it.fast4x.rimusic.ui.styling.applyPitchBlack
 import it.fast4x.rimusic.ui.styling.colorPaletteOf
 import it.fast4x.rimusic.ui.styling.customColorPalette
 import it.fast4x.rimusic.ui.styling.dynamicColorPaletteOf
+import it.fast4x.rimusic.ui.styling.isLiquidGlass
+import it.fast4x.rimusic.ui.styling.liquidGlassBackdrop
 import it.fast4x.rimusic.ui.styling.typographyOf
 import it.fast4x.rimusic.utils.LocalMonetCompat
 import it.fast4x.rimusic.utils.asMediaItem
@@ -638,7 +640,12 @@ MainActivity :
             BoxWithConstraints(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(appearance.colorPalette.background0)
+                    .then(
+                        if (appearance.colorPalette.isLiquidGlass)
+                            Modifier.liquidGlassBackdrop()
+                        else
+                            Modifier.background(appearance.colorPalette.background0)
+                    )
             ) {
 
 

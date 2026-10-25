@@ -40,6 +40,7 @@ import it.fast4x.rimusic.showStatsIconInNav
 import it.fast4x.rimusic.ui.components.themed.Button
 import it.fast4x.rimusic.ui.components.themed.TextIconButton
 import it.fast4x.rimusic.ui.styling.Dimensions
+import it.fast4x.rimusic.ui.styling.surfaceBackground
 
 // Shown when "Navigation bar position" is set to "top" or "bottom"
 class HorizontalNavigationBar(
@@ -173,7 +174,7 @@ class HorizontalNavigationBar(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(roundedCornerShape)
-                        .background(colorPalette().background1)
+                        .surfaceBackground(roundedCornerShape, colorPalette().background1)
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
